@@ -70,8 +70,8 @@ pub enum JwtAuthError {
   #[error("No JWKS keystore address specified")]
   NoKeystoreSpecified,
 
-  #[error("Failed to load JWKS keystore from {0}")]
-  FailedToLoadKeystore(String),
+  #[error("Failed to load JWKS keystore from {0:?}")]
+  FailedToLoadKeystore(jwks_client::error::Error),
 
   #[error("Bearer authentication token invalid: {0:?}")]
   InvalidBearerAuth(jwks_client::error::Error),
@@ -93,10 +93,9 @@ impl JwtAuth
    * (`true`) or not (`false`).
    */
   pub fn new_from_env(validator: JwtValidator) -> Result<Self,JwtAuthError> {
-    Ok(JwtAuth {
-      jwks_url: env::var("JWKS_URL")?,
-      validator: Rc::new(validator)
-    })
+    let jwks_url = env::var("JWKS_URL")?;
+
+    JwtAuth::new_from_url(validator, jwks_url)
   }
 
   /**
@@ -108,11 +107,16 @@ impl JwtAuth
    * the function will determine whether the request should be processed
    * (`true`) or not (`false`).
    */
-  pub fn new_from_url(validator: JwtValidator, jwks_url: String) -> Self {
-    JwtAuth {
+  pub fn new_from_url(validator: JwtValidator, jwks_url: String) -> Result<Self,JwtAuthError> {
+
+    // Even though we don't use it now, I want to fail-fast, so I check now
+    // if I can download the keystore
+    let _jwks = KeyStore::new_from(&jwks_url)?;
+
+    Ok(JwtAuth {
       jwks_url,
       validator: Rc::new(validator)
-    }
+    })
   }
 }
 
@@ -216,6 +220,12 @@ where
 }
 
 
+impl From<jwks_client::error::Error> for JwtAuthError {
+  fn from(e: jwks_client::error::Error) -> Self {
+    JwtAuthError::FailedToLoadKeystore(e)
+  }
+}
+
 impl From<VarError> for JwtAuthError {
   fn from(_: VarError) -> Self {
     JwtAuthError::NoKeystoreSpecified
@@ -238,8 +248,31 @@ impl ResponseError for JwtAuthError {
 mod tests {
   use super::*;
 
+  const TEST_KEYSET: &str = "https://snowgoons.eu.auth0.com/.well-known/jwks.json";
+
   #[actix_rt::test]
-  async fn test_jwtauth_noheader() {
-    // We will write something here someday @todo
+  async fn test_jwks_url() {
+    let _middleware = JwtAuth::new_from_url(CheckJwtValid, String::from(TEST_KEYSET)).unwrap();
+  }
+
+  #[actix_rt::test]
+  #[should_panic]
+  async fn test_jwks_url_fail() {
+    let _middleware = JwtAuth::new_from_url(CheckJwtValid, String::from("https://not.here/")).unwrap();
+  }
+
+  #[actix_rt::test]
+  async fn test_jwks_env() {
+    env::set_var("JWKS_URL", String::from(TEST_KEYSET));
+
+    let _middleware = JwtAuth::new_from_env(CheckJwtValid).unwrap();
+  }
+
+  #[actix_rt::test]
+  #[should_panic]
+  async fn test_jwks_env_fail() {
+    env::remove_var("JWKS_URL");
+
+    let _middleware = JwtAuth::new_from_env(CheckJwtValid).unwrap();
   }
 }
