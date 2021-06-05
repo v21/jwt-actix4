@@ -84,7 +84,7 @@ pages:
     paths:
     - public
   script:
-  - cp -R docs public
+  - cp -R target/doc public
 
 # PUSH TO REGISTRY
 #
