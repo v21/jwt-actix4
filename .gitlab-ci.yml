@@ -32,6 +32,7 @@ cargo-build-job:
   artifacts:
     paths:
     - target/release
+    - Cargo.lock
   script:
   - cargo build --release
 
@@ -75,8 +76,8 @@ build-docs-job:
   - cargo doc --no-deps
 
 pages:
-#  only:
-#  - /^V.*/
+  only:
+  - /^V.*/
   needs:
   - build-docs-job
   stage: release
@@ -89,14 +90,14 @@ pages:
 # PUSH TO REGISTRY
 #
 push-crate-job:
-  #  only:
-  #  - /^V.*/
+  only:
+  - /^V.*/
   image:
     name: jwt-actix4-cicd:${CI_COMMIT_SHORT_SHA}
   stage: release
   script:
   - cargo login ${CRATES_IO_KEY}
-  - cargo publish --dry-run
+  - cargo publish
 
 release_job:
   stage: release

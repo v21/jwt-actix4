@@ -3,7 +3,7 @@ JWT bearer authentication that works with [actix-web] 4.
 
 | Resource | Where |
 | -------- | ----- |
-| Documentation | https://jwt-actix4.snowgoons.ro |
+| Documentation | https://jwt-actix4.snowgoons.ro/jwt_actix/ |
 | GitLab | https://gitlab.com/snowgoonspub/jwt-actix4 |
 
 ## Why?
