@@ -5,9 +5,13 @@ authors = ["Tim Walls <tim.walls@snowgoons.com>"]
 edition = "2018"
 
 description = "JWT authentication middleware for Actix 4"
-documentation = "https://jwt-actix-4.snowgoons.ro"
+documentation = "https://jwt-actix4.snowgoons.ro"
 homepage = "https://snowgoons.ro"
 license-file = "LICENSE.md"
+readme = "README.md"
+repository = "https://gitlab.com/snowgoonspub/jwt-actix4"
+keywords = [ "actix", "jwt", "oauth" ]
+categories = [ "web-programming", "web-programming::http-server" ]
 
 [lib]
 name = "jwt_actix"
