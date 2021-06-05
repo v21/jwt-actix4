@@ -1,0 +1,10 @@
+FROM snowgoons/glassbox AS docbuilder
+
+WORKDIR /
+COPY ./ source/.
+RUN /glassbox/bin/docker-entrypoint.sh /source /hugosite /docs
+
+FROM scratch
+COPY --from=docbuilder /docs ./
+
+

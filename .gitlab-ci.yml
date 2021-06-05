@@ -1,0 +1,111 @@
+variables:
+  DOCKER_HOST: tcp://hp-node0.k8s.int.snowgoons.ro:2375/
+  GIT_STRATEGY: fetch
+  GIT_DEPTH: 1
+
+.dind-job: &dind-job
+  image: snowgoons/docker-buildx:20
+
+# Declare our pipeline stages
+stages:
+  - prepare
+  - build
+  - automated-tests
+  - push
+  - release
+
+#
+# For non Docker build steps that still need Cargo, we need a Docker image
+# that has any dependencies we need installed (e.g. to run tests)
+prepare-container-job:
+  <<: *dind-job
+  stage: prepare
+  script:
+  - docker build -t jwt-actix4-cicd:${CI_COMMIT_SHORT_SHA} - < Dockerfile.cicdbuilder
+
+#
+# Build the release package
+cargo-build-job:
+  image:
+    name: jwt-actix4-cicd:${CI_COMMIT_SHORT_SHA}
+  stage: build
+  artifacts:
+    paths:
+    - target/release
+  script:
+  - cargo build --release
+
+#
+# Automated tests
+cargo-test-job:
+  image:
+    name: jwt-actix4-cicd:${CI_COMMIT_SHORT_SHA}
+  stage: automated-tests
+  needs:
+  - cargo-build-job
+  artifacts:
+    reports:
+      cobertura:
+      - "**/cobertura.xml"
+  script:
+  - ./bin/test-all.sh --release
+
+vulnerability-audit-job:
+  image:
+    name: jwt-actix4-cicd:${CI_COMMIT_SHORT_SHA}
+  stage: automated-tests
+  needs:
+  - cargo-build-job
+  script:
+  - ./bin/audit-all.sh
+
+# PUSH TO REGISTRY
+#
+push-crate-job:
+#  only:
+#  - /^V.*/
+  image:
+    name: jwt-actix4-cicd:${CI_COMMIT_SHORT_SHA}
+  stage: push
+  script:
+  - cargo login ${CRATES_IO_KEY}
+  - cargo publish --dry-run
+
+# DOCUMENTATION
+#
+build-docs-job:
+  stage: release
+  needs:
+  - cargo-build-job
+  image:
+    name: jwt-actix4-cicd:${CI_COMMIT_SHORT_SHA}
+  artifacts:
+    paths:
+    - target/doc
+  script:
+  - cargo doc --no-deps
+
+pages:
+#  only:
+#  - /^V.*/
+  needs:
+  - build-docs-job
+  stage: release
+  artifacts:
+    paths:
+    - public
+  script:
+  - cp -R docs public
+
+release_job:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^V[0-9].*/
+  script:
+    - echo 'running release_job'
+  release:
+    name: 'Release $CI_COMMIT_TAG'
+    description: './CHANGELOG.md'
+    tag_name: '$CI_COMMIT_TAG'
+    ref: '$CI_COMMIT_TAG'

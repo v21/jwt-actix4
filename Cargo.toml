@@ -1,0 +1,30 @@
+[package]
+name = "jwt-actix4"
+version = "0.1.0"
+authors = ["Tim Walls <tim.walls@snowgoons.com>"]
+edition = "2018"
+
+description = "JWT authentication middleware for Actix 4"
+documentation = "https://jwt-actix-4.snowgoons.ro"
+homepage = "https://snowgoons.ro"
+license-file = "LICENSE.md"
+
+[lib]
+name = "jwt_actix"
+path = "src/lib.rs"
+
+[dev-dependencies]
+actix-rt = "2.2"
+actix-utils = "3.0"
+
+[dependencies]
+jwks-client = "0.1.8"
+
+# Actix
+actix-web = "4.0.0-beta.6"
+actix-service = "1.0"
+
+# Errors & logging
+thiserror = "1.0"
+log = "0.4"
+env_logger = "0.8"

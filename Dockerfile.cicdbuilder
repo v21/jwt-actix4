@@ -1,0 +1,12 @@
+FROM snowgoons/rustbuilder
+
+WORKDIR /
+RUN apt-get update
+
+# Required for doing code-coverage tests
+#
+# (We don't do this in the main rustbuilder container image, because it can't
+# be built/installed cross-platform)
+RUN cargo install cargo-tarpaulin
+
+CMD /bin/bash
