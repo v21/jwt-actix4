@@ -11,7 +11,7 @@ stages:
   - prepare
   - build
   - automated-tests
-  - push
+  - docs
   - release
 
 #
@@ -59,22 +59,11 @@ vulnerability-audit-job:
   script:
   - ./bin/audit-all.sh
 
-# PUSH TO REGISTRY
-#
-push-crate-job:
-#  only:
-#  - /^V.*/
-  image:
-    name: jwt-actix4-cicd:${CI_COMMIT_SHORT_SHA}
-  stage: push
-  script:
-  - cargo login ${CRATES_IO_KEY}
-  - cargo publish --dry-run
 
 # DOCUMENTATION
 #
 build-docs-job:
-  stage: release
+  stage: docs
   needs:
   - cargo-build-job
   image:
@@ -96,6 +85,18 @@ pages:
     - public
   script:
   - cp -R docs public
+
+# PUSH TO REGISTRY
+#
+push-crate-job:
+  #  only:
+  #  - /^V.*/
+  image:
+    name: jwt-actix4-cicd:${CI_COMMIT_SHORT_SHA}
+  stage: release
+  script:
+  - cargo login ${CRATES_IO_KEY}
+  - cargo publish --dry-run
 
 release_job:
   stage: release
