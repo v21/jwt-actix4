@@ -1,6 +1,6 @@
 [package]
 name = "jwt-actix4"
-version = "0.1.0"
+version = "0.3.0"
 authors = ["Tim Walls <tim.walls@snowgoons.com>"]
 edition = "2018"
 
@@ -18,17 +18,17 @@ name = "jwt_actix"
 path = "src/lib.rs"
 
 [dev-dependencies]
-actix-rt = "2.2"
+actix-rt = "2.7"
 actix-utils = "3.0"
 
 [dependencies]
 jwks-client = "0.1.8"
 
 # Actix
-actix-web = "4.0.0-beta.6"
-actix-service = "1.0"
+actix-web = "4.0.0"
+actix-service = "2.0.2"
 
 # Errors & logging
 thiserror = "1.0"
 log = "0.4"
-env_logger = "0.8"
+env_logger = "0.9"

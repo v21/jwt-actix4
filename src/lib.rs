@@ -11,14 +11,15 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use actix_web::{Error, ResponseError};
-use actix_web::dev::{ServiceRequest,ServiceResponse};
+pub use actix_web::dev::{ServiceRequest,ServiceResponse};
 use std::future::{Future, Ready, ready};
-use actix_web::dev::{Transform, Service, MessageBody};
+use actix_web::dev::{Transform, Service};
+use actix_web::body::MessageBody;
 use jwks_client::keyset::KeyStore;
 use std::env;
 use thiserror::Error;
 use std::env::VarError;
-use jwks_client::jwt::Jwt;
+pub use jwks_client::jwt::{Jwt, Payload, Header};
 use std::rc::Rc;
 
 use actix_web::http::StatusCode;
@@ -134,8 +135,6 @@ where
   type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
   fn new_transform(&self, service: S) -> Self::Future {
-    println!("Creating a new transformer");
-
     let jwks_url = self.jwks_url.clone();
 
     ready(match KeyStore::new_from(&jwks_url) {
@@ -204,8 +203,6 @@ where
 
     // OK, if we got this far, we have a possibly validated JWT (or None in
     // its stead, if it wasn't present or didn't validate)
-    println!("JWT = {:?}", jwt);
-
     if (self.validator)(&req, &jwt) {
       let fut = self.service.call(req);
       Box::pin(async move {
