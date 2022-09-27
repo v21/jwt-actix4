@@ -7,7 +7,9 @@
  * Documentation comment for this file.
  */
 // Imports ===================================================================
+
 use std::pin::Pin;
+use std::sync::RwLock;
 use std::task::{Context, Poll};
 
 use actix_web::{Error, ResponseError};
@@ -62,7 +64,7 @@ pub struct JwtAuth {
 
 pub struct JwtAuthService<S> {
   service: S,
-  jwks: KeyStore,
+  jwks: RwLock<KeyStore>,
   validator: Rc<JwtValidator>
 }
 
@@ -141,7 +143,7 @@ where
       Ok(jwks) => {
         Ok(JwtAuthService {
           service,
-          jwks,
+          jwks: RwLock::new(jwks),
           validator: self.validator.clone()
         })
       }
@@ -171,6 +173,16 @@ where
   }
 
   fn call(&self, req: ServiceRequest) -> Self::Future {
+    if self.jwks.read().unwrap().should_refresh() == Some(true) {
+      let result = self.jwks.write().unwrap().load_keys();
+      if result.is_err() {
+        return Box::pin(ready(Err(JwtAuthError::FailedToLoadKeystore(
+            result.unwrap_err(),
+        )
+        .into())));
+      }
+    }
+
     let authorization = req.headers().get(actix_web::http::header::AUTHORIZATION);
 
     let jwt = {
@@ -181,7 +193,7 @@ where
 
           match value_str.strip_prefix("Bearer ") {
             Some(token) => {
-              match self.jwks.verify(&token) {
+              match self.jwks.read().unwrap().verify(&token) {
                 Ok(jwt) => {
                   Some(jwt)
                 }
